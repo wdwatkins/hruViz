@@ -4,6 +4,9 @@ library(dplyr)
 library(tidyr)
 library(lubridate)
 
+#David Watkins December 2017
+#running this for a full year takes ~12 hours in serial on a laptop
+
 streamSegments <- readOGR(dsn = "OfficialSegments", 
                           layer = "OfficialSegments", stringsAsFactors = FALSE)
 streamOrder <- fread('gfSegsStreamOrder.csv', colClasses = c(seg_id_nat="character"))
