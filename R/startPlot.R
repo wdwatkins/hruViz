@@ -8,10 +8,9 @@ streamSegments <- readOGR(dsn = "OfficialSegments",
                           layer = "OfficialSegments", stringsAsFactors = FALSE)
 streamOrder <- fread('gfSegsStreamOrder.csv', colClasses = c(seg_id_nat="character"))
 streamSegments@data <- left_join(streamSegments@data, streamOrder, by = "seg_id_nat")
-streamSegments_filt <- subset(streamSegments, streamSegments$SO > 4 & !region.y %in% c("19", "20", "21"))
+streamSegments_filt <- subset(streamSegments, streamSegments$SO > 0 & !region.y %in% c("19", "20", "21"))
+#streamSegments_filt <- subset(streamSegments, !region.y %in% c("19", "20", "21"))
 
-#TODO: combine these to one table?  not unmanageable size
-#go to long?
 percTable1 <- fread('mthPCNT1_seg_outflow.tsv') %>% mutate(pct='p1')
 percTable10 <- fread('mthPCNT10_seg_outflow.tsv') %>% mutate(pct='p10')
 percTable25 <- fread('mthPCNT25_seg_outflow.tsv') %>% mutate(pct='p25')
@@ -33,8 +32,8 @@ gatherPerc <- gather(allPerc, day, value, -seg_id, -pct) %>%
 allDates <- data.table::fread(input = 'seg_outflow.tsv', 
                               select = 1, col.names = "Date")
 
-startDate <- "1997-04-01"
-endDate <- "1997-08-01"
+startDate <- "1998-01-01"
+endDate <- "1998-12-31"
 startDateIndex <- which(allDates$Date == startDate)
 endDateIndex <- which(allDates$Date == endDate)
 actualOutflows <- fread('seg_outflow.tsv', 
@@ -70,24 +69,19 @@ joinedPercOutflow <- left_join(outflows_gathered, gatherPerc, by = c("seg_id", "
                                                                                   no = NA)))))))
 #color lookup table
 color_lookup <- data.frame(cat = c("lt1", "lt10", "lt25", "lt75", "lt90", "lt100", "gt100"), 
-                           col = c("red", "red3", "orange2", "forestgreen", "darkturquoise", "blue", "black"),
+                           #col = c("red", "red3", "orange2", "forestgreen", "darkturquoise", "blue", "black"),
+                           #col = brewer.pal(7, "Blues"),
+                           #col = brewer.pal(7, "RdBu"),
+                           col = c("#d73027", "#fc8d59", "#fddbc7", "#f7f7f7", "#e0f3f8",
+                                   "#91bfdb", "#4575b4"),
                            stringsAsFactors = FALSE)
 joinedPercOutflow <- left_join(joinedPercOutflow, color_lookup, by = "cat")
 
-#local parallelization doesnt seem to help, probably memory limited
-plotFunc <- function(plotDates, joinedPercOutflow, streamSegments_filt) {
-   for(i in seq_along(plotDates)) {
-    d <- plotDates[i]
-    #filter to particular day, join to spatial df
-    dayDF <- joinedPercOutflow %>% filter(Date == d) %>% mutate(seg_id=as.character(seg_id)) %>% 
-      rename(seg_id_nat=seg_id)
-    day_spatial <- left_join(streamSegments_filt@data, dayDF, by = "seg_id_nat")
-    
-    #actual plotting
-    png(filename = paste0("img/day_", sprintf("%03d", i), ".png"))
-    plot(streamSegments_filt, col = day_spatial$col)
-    dev.off()
-    print(paste("done", d))
-  }
-}
-plotFunc(plotDates, joinedPercOutflow, streamSegments_filt)
+
+
+
+source('R/functions.R')
+#add lwd column
+streamSegments_filt@data <- streamSegments_filt@data %>% mutate(lwd = ifelse(SO < 3, yes = 0.4, no = 1)) %>% 
+  mutate(lwd = ifelse(SO > 5, yes = 2, no = lwd))
+plotFunc(plotDates, joinedPercOutflow, streamSegments_filt, color_lookup)
