@@ -35,8 +35,8 @@ gatherPerc <- gather(allPerc, day, value, -seg_id, -pct) %>%
 allDates <- data.table::fread(input = 'seg_outflow.tsv', 
                               select = 1, col.names = "Date")
 
-startDate <- "1998-01-01"
-endDate <- "1998-12-31"
+startDate <- "2010-06-01"
+endDate <- "2010-06-01"
 startDateIndex <- which(allDates$Date == startDate)
 endDateIndex <- which(allDates$Date == endDate)
 actualOutflows <- fread('seg_outflow.tsv', 
